@@ -76,7 +76,8 @@ async function main() {
     if (!batch.length) return;
     const cols = Object.keys(batch[0]);
     const set = cols.filter((c) => c !== "id").map((c) => `${c} = excluded.${c}`).join(", ");
-    await sql`INSERT INTO mtg_cards ${sql(batch, cols)} ON CONFLICT (id) DO UPDATE SET ${sql.unsafe(set)}`;
+    const q: any = sql;
+    await q`INSERT INTO mtg_cards ${q(batch, cols)} ON CONFLICT (id) DO UPDATE SET ${sql.unsafe(set)}`;
     n += batch.length;
     batch = [];
     if (n % 20000 < 1000) console.log(n);
