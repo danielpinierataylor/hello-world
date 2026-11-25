@@ -138,3 +138,5 @@ ALTER TABLE listings ADD COLUMN IF NOT EXISTS gl_buy_cash_aud numeric(12,2);
 ALTER TABLE listings ADD COLUMN IF NOT EXISTS gl_buy_credit_aud numeric(12,2);
 ALTER TABLE listings ADD COLUMN IF NOT EXISTS on_shopify boolean NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS listings_gl_card ON listings (gl_card_id);
+
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS shopify_image text;

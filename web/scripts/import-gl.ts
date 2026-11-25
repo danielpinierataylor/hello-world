@@ -29,9 +29,23 @@ async function main() {
   if (!glFile) throw new Error("usage: import-gl.ts gl-export.csv [shopify-export.csv ...]");
   const rows: Row[] = parse(readFileSync(glFile), { columns: true, skip_empty_lines: true });
 
+  // Shopify files: inventory exports (column "SKU") or product exports (columns "Variant SKU", "Handle", "Image Src").
+  // GL pushes Near Mint to Shopify with SKU "<GL card id>_<location id>".
   const onShopify = new Set<string>();
+  const handles = new Map<string, string>();
+  const images = new Map<string, string>();
   for (const f of shopifyFiles) {
-    for (const r of parse(readFileSync(f), { columns: true, skip_empty_lines: true }) as Row[]) onShopify.add(r.SKU.split("_")[0]);
+    const imageByHandle = new Map<string, string>();
+    for (const r of parse(readFileSync(f), { columns: true, skip_empty_lines: true, relax_quotes: true }) as Row[]) {
+      if (r.Handle && r["Image Src"] && !imageByHandle.has(r.Handle)) imageByHandle.set(r.Handle, r["Image Src"]);
+      const sku = r.SKU ?? r["Variant SKU"];
+      if (!sku) continue;
+      const id = sku.split("_")[0];
+      onShopify.add(id);
+      if (r.Handle) handles.set(id, r.Handle);
+      const img = imageByHandle.get(r.Handle);
+      if (img && r["Variant SKU"]) images.set(id, img);
+    }
   }
 
   const groups = await sql`SELECT group_id, game, name FROM tcg_groups`;
@@ -87,7 +101,8 @@ async function main() {
       sku: r["Card Id"],
       gl_card_id: r["Card Id"],
       gl_catalogue_id: r["Catalogue Id"] || null,
-      handle: r["Card Id"],
+      handle: handles.get(r["Card Id"]) ?? r["Card Id"],
+      shopify_image: images.get(r["Card Id"]) ?? null,
       title,
       game,
       card_name: p.name,

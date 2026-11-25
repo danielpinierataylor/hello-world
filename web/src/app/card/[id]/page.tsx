@@ -15,7 +15,7 @@ export default async function CardPage({ params }: { params: Promise<{ id: strin
 
   // Every printing of this card we have listed, with stock + TCGplayer market for that exact finish
   const listings = await sql`
-    SELECT l.title, l.finish, l.sub_type, l.available, l.condition, l.condition_label, l.price_aud, l.on_shopify,
+    SELECT l.title, l.finish, l.sub_type, l.available, l.condition, l.condition_label, l.price_aud, l.on_shopify, l.handle,
            c.id AS card_id, c.set_name, c.set_code, c.collector_number, c.image_small, pr.market_usd
     FROM mtg_cards c
     JOIN listings l ON l.scryfall_id = c.id
@@ -50,7 +50,7 @@ export default async function CardPage({ params }: { params: Promise<{ id: strin
               <thead className="text-left text-muted">
                 <tr className="border-b border-line">
                   <th className="p-2">Printing</th><th className="p-2">Finish</th><th className="p-2">Cond.</th><th className="p-2">Qty</th>
-                  <th className="p-2">Our price</th><th className="p-2">We pay (credit / cash)</th>
+                  <th className="p-2">Our price</th><th className="p-2">We pay (credit / cash)</th><th className="p-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -65,10 +65,16 @@ export default async function CardPage({ params }: { params: Promise<{ id: strin
                       <td className="p-2">{l.available > 0 ? l.available : "—"}</td>
                       <td className="p-2 font-semibold">{l.price_aud == null ? "—" : money(Number(l.price_aud))}</td>
                       <td className="p-2">{m == null || mult == null ? "—" : `${money(m * pct.credit * mult)} / ${money(m * pct.cash * mult)}`}</td>
+                      <td className="p-2 text-right">
+                        {l.available > 0 && (l.on_shopify
+                          ? <a href={`https://goodgamesmorley.com.au/products/${l.handle}`} className="rounded bg-brand px-2.5 py-1 text-xs font-semibold text-white">Buy</a>
+                          // TODO: deep-link to the exact Game Locker card once we know GL's URL format
+                          : <a href="https://gamelocker.co/store/morley" className="whitespace-nowrap rounded border border-line px-2.5 py-1 text-xs">Buy on GL</a>)}
+                      </td>
                     </tr>
                   );
                 })}
-                {listings.length === 0 && <tr><td className="p-3 text-muted" colSpan={6}>Not in stock right now.</td></tr>}
+                {listings.length === 0 && <tr><td className="p-3 text-muted" colSpan={7}>Not in stock right now.</td></tr>}
               </tbody>
             </table>
           </div>
