@@ -125,7 +125,9 @@ INSERT INTO settings (key, value) VALUES
   ('buylist', '{
      "default": {"credit": 0.70, "cash": 0.60},
      "games": {"mtg": {"credit": 0.70, "cash": 0.60}},
-     "conditions": {"NM": 1.0, "LP": 0.8, "MP": 0.75, "HP": 0.6, "DMG": 0.5}
+     "conditions": {"NM": 1.0, "LP": 0.8, "MP": 0.75, "HP": 0.6, "DMG": 0.5},
+     "minOfferAud": 0.05,
+     "maxPerCard": 20
    }')
 ON CONFLICT (key) DO NOTHING;
 
@@ -151,3 +153,60 @@ CREATE TABLE IF NOT EXISTS import_runs (
   error       text,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- ---------- Buylist ----------
+-- Hotlist: cards we want right now, with better rates. Matches a TCGplayer product + printing (sub_type).
+CREATE TABLE IF NOT EXISTS hotlist (
+  id             bigserial PRIMARY KEY,
+  game           text NOT NULL,
+  tcg_product_id int NOT NULL,
+  sub_type       text NOT NULL DEFAULT 'Normal',
+  credit_aud     numeric(12,2),          -- fixed NM offer (credit); NULL = use boost
+  cash_aud       numeric(12,2),
+  boost          numeric(5,3),           -- multiplier on normal offer, e.g. 1.15 (+15%)
+  max_qty        int,                    -- stop buying after this many
+  note           text,
+  active         boolean NOT NULL DEFAULT true,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tcg_product_id, sub_type)
+);
+
+-- Customer sell submissions (prices are quoted at submit time and kept)
+CREATE TABLE IF NOT EXISTS buylist_submissions (
+  id            bigserial PRIMARY KEY,
+  ref           text UNIQUE NOT NULL,                 -- short code customers quote, e.g. GGM-7K3Q
+  name          text NOT NULL,
+  email         text NOT NULL,
+  phone         text,
+  payout        text NOT NULL CHECK (payout IN ('credit', 'cash')),
+  delivery      text NOT NULL CHECK (delivery IN ('dropoff', 'post')),
+  notes         text,
+  status        text NOT NULL DEFAULT 'submitted',    -- submitted -> received -> graded -> paid | cancelled
+  quoted_total  numeric(12,2) NOT NULL,
+  final_total   numeric(12,2),
+  fx_usd_aud    numeric(8,4) NOT NULL,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS buylist_items (
+  id              bigserial PRIMARY KEY,
+  submission_id   bigint NOT NULL REFERENCES buylist_submissions(id) ON DELETE CASCADE,
+  game            text NOT NULL,
+  tcg_product_id  int NOT NULL,
+  sub_type        text NOT NULL,
+  scryfall_id     uuid,
+  name            text NOT NULL,
+  set_name        text,
+  number          text,
+  condition       text NOT NULL,             -- as claimed by customer
+  qty             int NOT NULL CHECK (qty > 0),
+  unit_quote      numeric(12,2) NOT NULL,     -- per card, in chosen payout
+  hot             boolean NOT NULL DEFAULT false,
+  received_qty    int,
+  graded_condition text,
+  unit_final      numeric(12,2)
+);
+CREATE INDEX IF NOT EXISTS buylist_items_sub ON buylist_items (submission_id);
+
+CREATE INDEX IF NOT EXISTS listings_tcg_sub ON listings (tcg_product_id, sub_type);
