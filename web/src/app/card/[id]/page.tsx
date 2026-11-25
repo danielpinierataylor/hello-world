@@ -15,13 +15,13 @@ export default async function CardPage({ params }: { params: Promise<{ id: strin
 
   // Every printing of this card we have listed, with stock + TCGplayer market for that exact finish
   const listings = await sql`
-    SELECT l.title, l.finish, l.sub_type, l.available, l.condition, c.id AS card_id, c.set_name, c.set_code,
-           c.collector_number, c.image_small, pr.market_usd
+    SELECT l.title, l.finish, l.sub_type, l.available, l.condition, l.condition_label, l.price_aud, l.on_shopify,
+           c.id AS card_id, c.set_name, c.set_code, c.collector_number, c.image_small, pr.market_usd
     FROM mtg_cards c
     JOIN listings l ON l.scryfall_id = c.id
     LEFT JOIN tcg_prices pr ON pr.product_id = l.tcg_product_id AND pr.sub_type = l.sub_type
-    WHERE c.oracle_id = ${card.oracle_id}
-    ORDER BY (l.available > 0) DESC, pr.market_usd DESC NULLS LAST`;
+    WHERE c.oracle_id = ${card.oracle_id} AND (l.available > 0 OR l.condition = 'NM')
+    ORDER BY (l.available > 0) DESC, pr.market_usd DESC NULLS LAST, l.condition`;
 
   const money = (n: number) => `A$${n.toFixed(2)}`;
 
@@ -49,28 +49,34 @@ export default async function CardPage({ params }: { params: Promise<{ id: strin
             <table className="w-full text-sm">
               <thead className="text-left text-muted">
                 <tr className="border-b border-line">
-                  <th className="p-2">Printing</th><th className="p-2">Finish</th><th className="p-2">Qty</th>
-                  <th className="p-2">Market</th><th className="p-2">We pay (credit / cash)</th>
+                  <th className="p-2">Printing</th><th className="p-2">Finish</th><th className="p-2">Cond.</th><th className="p-2">Qty</th>
+                  <th className="p-2">Our price</th><th className="p-2">We pay (credit / cash)</th>
                 </tr>
               </thead>
               <tbody>
                 {listings.map((l, i) => {
                   const m = l.market_usd == null ? null : Number(l.market_usd) * fx;
+                  const mult = buylist.conditions[l.condition] ?? null;
                   return (
                     <tr key={i} className={`border-b border-line last:border-0 ${l.available > 0 ? "" : "text-muted"}`}>
                       <td className="p-2"><Link href={`/card/${l.card_id}`} className="hover:underline">{l.set_name} #{l.collector_number}</Link></td>
-                      <td className="p-2">{l.finish ?? "Regular"}</td>
+                      <td className="p-2">{l.finish === "Normal" ? "Regular" : l.finish}</td>
+                      <td className="p-2" title={l.condition_label}>{l.condition}{l.available > 0 && !l.on_shopify && <span className="ml-1 text-amber-400" title="Not on Shopify — Game Locker only">●</span>}</td>
                       <td className="p-2">{l.available > 0 ? l.available : "—"}</td>
-                      <td className="p-2">{m == null ? "—" : money(m)}</td>
-                      <td className="p-2">{m == null ? "—" : `${money(m * pct.credit)} / ${money(m * pct.cash)}`}</td>
+                      <td className="p-2 font-semibold">{l.price_aud == null ? "—" : money(Number(l.price_aud))}</td>
+                      <td className="p-2">{m == null || mult == null ? "—" : `${money(m * pct.credit * mult)} / ${money(m * pct.cash * mult)}`}</td>
                     </tr>
                   );
                 })}
-                {listings.length === 0 && <tr><td className="p-3 text-muted" colSpan={5}>Not in stock right now.</td></tr>}
+                {listings.length === 0 && <tr><td className="p-3 text-muted" colSpan={6}>Not in stock right now.</td></tr>}
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-muted">Buy prices: {Math.round(pct.credit * 100)}% store credit / {Math.round(pct.cash * 100)}% cash of TCGplayer market (Near Mint), at A${fx.toFixed(2)}/US$.</p>
+          <p className="text-xs text-muted">
+            Buy prices: {Math.round(pct.credit * 100)}% store credit / {Math.round(pct.cash * 100)}% cash of TCGplayer market at A${fx.toFixed(2)}/US$,
+            adjusted by condition ({Object.entries(buylist.conditions).map(([k, v]) => `${k} ${Math.round(v * 100)}%`).join(", ")}).
+            <span className="text-amber-400"> ●</span> = Game Locker only (not on Shopify).
+          </p>
         </section>
       </div>
     </div>

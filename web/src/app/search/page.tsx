@@ -10,6 +10,11 @@ const aud = (usd: string | number | null | undefined, fx: number) =>
 
 type SP = Promise<Record<string, string | undefined>>;
 
+function Price({ ours, market }: { ours: string | null; market: string | null }) {
+  if (ours) return <span className="font-semibold">from A${Number(ours).toFixed(2)}</span>;
+  return <span className="text-muted">{market ? `${market} mkt` : ""}</span>;
+}
+
 export default async function SearchPage({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
   const q = sp.q ?? "";
@@ -47,7 +52,7 @@ export default async function SearchPage({ searchParams }: { searchParams: SP })
                   {c.qty > 0
                     ? <span className="rounded bg-accent/15 px-1.5 py-0.5 text-accent">{c.qty} in stock{c.printings_in_stock > 1 ? ` · ${c.printings_in_stock} printings` : ""}</span>
                     : <span className="text-muted">Out of stock</span>}
-                  <span className="text-muted">{aud(c.usd ?? c.usd_foil, fx)}</span>
+                  <Price ours={c.min_price} market={aud(c.usd ?? c.usd_foil, fx)} />
                 </div>
               </Link>
             ))
@@ -59,7 +64,7 @@ export default async function SearchPage({ searchParams }: { searchParams: SP })
                 <div className="text-xs text-muted">{c.set_name} · {c.number}</div>
                 <div className="flex items-center justify-between text-xs">
                   {c.qty > 0 ? <span className="rounded bg-accent/15 px-1.5 py-0.5 text-accent">{c.qty} in stock</span> : <span className="text-muted">Out of stock</span>}
-                  <span className="text-muted">{aud(c.market_usd, fx)}</span>
+                  <Price ours={c.min_price} market={aud(c.market_usd, fx)} />
                 </div>
               </div>
             ))}
@@ -71,7 +76,7 @@ export default async function SearchPage({ searchParams }: { searchParams: SP })
         {page > 1 && <Link href={pageHref(page - 1)} className="rounded border border-line px-3 py-1">← Prev</Link>}
         {page * 60 < res.total && <Link href={pageHref(page + 1)} className="rounded border border-line px-3 py-1">Next →</Link>}
       </div>
-      <p className="text-xs text-muted">Prices shown are TCGplayer market converted at A${fx.toFixed(2)}/US$ until live Shopify prices are connected.</p>
+      <p className="text-xs text-muted">“from” = our lowest price in stock (any condition). “mkt” = TCGplayer market at A${fx.toFixed(2)}/US$ for cards we don&apos;t stock.</p>
     </div>
   );
 }

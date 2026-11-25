@@ -10,7 +10,8 @@
     "db:schema": "psql \"$DATABASE_URL\" -f db/schema.sql",
     "ingest:scryfall": "tsx scripts/ingest-scryfall.ts",
     "ingest:tcgcsv": "tsx scripts/ingest-tcgcsv.ts",
-    "import:inventory": "tsx scripts/import-inventory.ts"
+    "import:inventory": "tsx scripts/import-inventory.ts",
+    "import:gl": "tsx scripts/import-gl.ts"
   },
   "dependencies": {
     "csv-parse": "^5.6.0",

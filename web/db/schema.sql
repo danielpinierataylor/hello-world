@@ -125,6 +125,16 @@ INSERT INTO settings (key, value) VALUES
   ('buylist', '{
      "default": {"credit": 0.70, "cash": 0.60},
      "games": {"mtg": {"credit": 0.70, "cash": 0.60}},
-     "conditions": {"NM": 1.0, "LP": 0.9, "MP": 0.75, "HP": 0.6, "DMG": 0.5}
+     "conditions": {"NM": 1.0, "LP": 0.8, "MP": 0.75, "HP": 0.6, "DMG": 0.5}
    }')
 ON CONFLICT (key) DO NOTHING;
+
+-- Game Locker export fields (GL is the source of truth for condition + prices)
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS gl_card_id text;
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS gl_catalogue_id text;
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS condition_label text;   -- full GL text, e.g. "Lightly Played", "PSA 10"
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS rarity text;
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS gl_buy_cash_aud numeric(12,2);
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS gl_buy_credit_aud numeric(12,2);
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS on_shopify boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS listings_gl_card ON listings (gl_card_id);
