@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { parse } from "csv-parse/sync";
 import { sql } from "./lib/db";
-import { parseTitle, scoreCandidate, pickSubType, setSimilarity, type Candidate } from "./lib/match";
+import { parseTitle, scoreCandidate, pickSubType, setSimilarity, type Candidate } from "../src/lib/import/match";
 
 const GL_SUFFIX = /^[0-9a-f]{32}_[0-9a-f-]{36}$/;
 

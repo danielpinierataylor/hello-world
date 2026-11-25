@@ -140,3 +140,14 @@ ALTER TABLE listings ADD COLUMN IF NOT EXISTS on_shopify boolean NOT NULL DEFAUL
 CREATE INDEX IF NOT EXISTS listings_gl_card ON listings (gl_card_id);
 
 ALTER TABLE listings ADD COLUMN IF NOT EXISTS shopify_image text;
+
+-- History of staff inventory uploads
+CREATE TABLE IF NOT EXISTS import_runs (
+  id          bigserial PRIMARY KEY,
+  kind        text NOT NULL,                 -- 'gl'
+  filename    text,
+  uploaded_by text,
+  stats       jsonb,
+  error       text,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);

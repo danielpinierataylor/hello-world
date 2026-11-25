@@ -2,6 +2,11 @@
 
 Our own storefront + buylist on top of Shopify (Shopify / Game Locker stay the source of truth for stock).
 
+## Staff
+
+- `/staff/import`: upload the Game Locker inventory export (CSV). Protected by `STAFF_PASSWORD` (any username).
+- `./scripts/dev-up.sh` starts Postgres + the dev server (cloud sessions stop them when idle).
+
 ## Data pipeline (dev)
 
 ```bash
