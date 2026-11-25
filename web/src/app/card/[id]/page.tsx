@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { sql } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
+import { gameLockerUrl, shopifyProductUrl } from "@/lib/links";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export default async function CardPage({ params }: { params: Promise<{ id: strin
 
   // Every printing of this card we have listed, with stock + TCGplayer market for that exact finish
   const listings = await sql`
-    SELECT l.title, l.finish, l.sub_type, l.available, l.condition, l.condition_label, l.price_aud, l.on_shopify, l.handle,
+    SELECT l.title, l.finish, l.sub_type, l.available, l.condition, l.condition_label, l.price_aud, l.on_shopify, l.handle, l.gl_catalogue_id, l.game, l.group_name, l.card_name,
            c.id AS card_id, c.set_name, c.set_code, c.collector_number, c.image_small, pr.market_usd
     FROM mtg_cards c
     JOIN listings l ON l.scryfall_id = c.id
@@ -67,9 +68,8 @@ export default async function CardPage({ params }: { params: Promise<{ id: strin
                       <td className="p-2">{m == null || mult == null ? "—" : `${money(m * pct.credit * mult)} / ${money(m * pct.cash * mult)}`}</td>
                       <td className="p-2 text-right">
                         {l.available > 0 && (l.on_shopify
-                          ? <a href={`https://goodgamesmorley.com.au/products/${l.handle}`} className="rounded bg-brand px-2.5 py-1 text-xs font-semibold text-white">Buy</a>
-                          // TODO: deep-link to the exact Game Locker card once we know GL's URL format
-                          : <a href="https://gamelocker.co/store/morley" className="whitespace-nowrap rounded border border-line px-2.5 py-1 text-xs">Buy on GL</a>)}
+                          ? <a href={shopifyProductUrl(l.handle)} className="rounded bg-brand px-2.5 py-1 text-xs font-semibold text-white">Buy</a>
+                          : <a href={gameLockerUrl({ gl_catalogue_id: l.gl_catalogue_id, game: l.game, group_name: l.group_name, card_name: l.card_name })} className="whitespace-nowrap rounded border border-line px-2.5 py-1 text-xs">Buy on GL</a>)}
                       </td>
                     </tr>
                   );
